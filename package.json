@@ -42,7 +42,7 @@
         {
           "id": "hierarchicalGitBranches.container",
           "title": "Branch Tree",
-          "icon": "$(git-branch)"
+          "icon": "resources/branch.svg"
         }
       ]
     },

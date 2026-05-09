@@ -20,13 +20,13 @@
     "Other"
   ],
   "scripts": {
-    "package": "vsce package --out dist/hierarchical-git-branches.vsix"
+    "package": "node -e \"require('fs').mkdirSync('dist',{recursive:true})\" && vsce package --out dist/hierarchical-git-branches.vsix"
   },
   "devDependencies": {
     "@vscode/vsce": "^3.2.2"
   },
   "activationEvents": [
-    "*",
+    "onStartupFinished",
     "onView:hierarchicalGitBranches.scmView",
     "onView:hierarchicalGitBranches.activityView",
     "onCommand:hierarchicalGitBranches.refresh",

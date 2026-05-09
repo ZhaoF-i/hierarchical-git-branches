@@ -1,0 +1,134 @@
+{
+  "name": "hierarchical-git-branches",
+  "displayName": "Hierarchical Git Branches",
+  "description": "Show Git branches as a slash-separated tree in the VS Code Source Control sidebar.",
+  "version": "0.0.1",
+  "publisher": "local",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ZhaoF-i/hierarchical-git-branches.git"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "extensionKind": [
+    "workspace"
+  ],
+  "categories": [
+    "SCM Providers",
+    "Other"
+  ],
+  "scripts": {
+    "package": "vsce package --out dist/hierarchical-git-branches.vsix"
+  },
+  "devDependencies": {
+    "@vscode/vsce": "^3.2.2"
+  },
+  "activationEvents": [
+    "*",
+    "onView:hierarchicalGitBranches.scmView",
+    "onView:hierarchicalGitBranches.activityView",
+    "onCommand:hierarchicalGitBranches.refresh",
+    "onCommand:hierarchicalGitBranches.checkout",
+    "onCommand:hierarchicalGitBranches.createBranchFromCurrent",
+    "onCommand:hierarchicalGitBranches.fetch",
+    "onCommand:hierarchicalGitBranches.copyBranchName"
+  ],
+  "main": "./src/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "hierarchicalGitBranches.container",
+          "title": "Branch Tree",
+          "icon": "$(git-branch)"
+        }
+      ]
+    },
+    "views": {
+      "hierarchicalGitBranches.container": [
+        {
+          "id": "hierarchicalGitBranches.activityView",
+          "name": "Branches"
+        }
+      ],
+      "scm": [
+        {
+          "id": "hierarchicalGitBranches.scmView",
+          "name": "Branch Tree"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "hierarchicalGitBranches.refresh",
+        "title": "Branch Tree: Refresh",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "hierarchicalGitBranches.checkout",
+        "title": "Branch Tree: Checkout"
+      },
+      {
+        "command": "hierarchicalGitBranches.createBranchFromCurrent",
+        "title": "Branch Tree: Create Branch From Current"
+      },
+      {
+        "command": "hierarchicalGitBranches.fetch",
+        "title": "Branch Tree: Fetch All",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "hierarchicalGitBranches.copyBranchName",
+        "title": "Branch Tree: Copy Branch Name"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "hierarchicalGitBranches.fetch",
+          "when": "view == hierarchicalGitBranches.scmView || view == hierarchicalGitBranches.activityView",
+          "group": "navigation@1"
+        },
+        {
+          "command": "hierarchicalGitBranches.refresh",
+          "when": "view == hierarchicalGitBranches.scmView || view == hierarchicalGitBranches.activityView",
+          "group": "navigation@2"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "hierarchicalGitBranches.checkout",
+          "when": "(view == hierarchicalGitBranches.scmView || view == hierarchicalGitBranches.activityView) && viewItem == branch",
+          "group": "inline@1"
+        },
+        {
+          "command": "hierarchicalGitBranches.createBranchFromCurrent",
+          "when": "(view == hierarchicalGitBranches.scmView || view == hierarchicalGitBranches.activityView) && viewItem == branch",
+          "group": "navigation@1"
+        },
+        {
+          "command": "hierarchicalGitBranches.copyBranchName",
+          "when": "(view == hierarchicalGitBranches.scmView || view == hierarchicalGitBranches.activityView) && viewItem == branch",
+          "group": "navigation@2"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Hierarchical Git Branches",
+      "properties": {
+        "hierarchicalGitBranches.includeRemoteBranches": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show remote branches below a Remotes section."
+        },
+        "hierarchicalGitBranches.autoRefresh": {
+          "type": "boolean",
+          "default": true,
+          "description": "Refresh the branch tree when the active editor or workspace changes."
+        }
+      }
+    }
+  }
+}

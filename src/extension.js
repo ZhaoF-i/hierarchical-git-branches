@@ -19,6 +19,8 @@ class BranchTreeProvider {
   constructor() {
     this._onDidChangeTreeData = new vscode.EventEmitter();
     this.onDidChangeTreeData = this._onDidChangeTreeData.event;
+    this._onDidRefresh = new vscode.EventEmitter();
+    this.onDidRefresh = this._onDidRefresh.event;
     this.repoRoot = undefined;
     this.currentBranch = '';
     this.roots = [];
@@ -27,9 +29,10 @@ class BranchTreeProvider {
 
   refresh() {
     this.repoRoot = findRepositoryRoot();
-    this.currentBranch = this.repoRoot ? git(['branch', '--show-current'], this.repoRoot).trim() : '';
+    this.currentBranch = this.repoRoot ? getCurrentBranch(this.repoRoot) : '';
     this.roots = this.repoRoot ? buildTree(this.repoRoot, this.currentBranch) : [];
     this._onDidChangeTreeData.fire();
+    this._onDidRefresh.fire();
   }
 
   getTreeItem(node) {
@@ -41,7 +44,11 @@ class BranchTreeProvider {
 
     item.tooltip = node.fullName || node.label;
 
-    if (node.type === 'section') {
+    if (node.type === 'current') {
+      item.description = 'current branch';
+      item.iconPath = new vscode.ThemeIcon('check');
+      item.contextValue = 'current';
+    } else if (node.type === 'section') {
       item.iconPath = new vscode.ThemeIcon(node.label === 'Local' ? 'repo' : 'cloud');
       item.contextValue = 'section';
     } else if (node.type === 'group') {
@@ -72,6 +79,22 @@ class BranchTreeProvider {
 
 function activate(context) {
   const provider = new BranchTreeProvider();
+  const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
+  statusBarItem.command = 'hierarchicalGitBranches.refresh';
+  statusBarItem.tooltip = 'Current Git branch';
+  context.subscriptions.push(statusBarItem);
+
+  const updateStatusBar = () => {
+    if (!provider.repoRoot) {
+      statusBarItem.hide();
+      return;
+    }
+
+    statusBarItem.text = `$(git-branch) ${provider.currentBranch || 'No branch'}`;
+    statusBarItem.show();
+  };
+  updateStatusBar();
+  context.subscriptions.push(provider.onDidRefresh(updateStatusBar));
 
   context.subscriptions.push(
     vscode.window.createTreeView(SCM_VIEW_ID, {
@@ -223,7 +246,13 @@ function buildTree(repoRoot, currentBranch) {
     .get('includeRemoteBranches', true);
 
   const localBranches = listBranches(repoRoot, false);
-  const roots = [new BranchNode('Local', 'section', '', toTree(localBranches, currentBranch, 'local'))];
+  const roots = [];
+
+  if (currentBranch) {
+    roots.push(new BranchNode(currentBranch, 'current', currentBranch, [], 'local'));
+  }
+
+  roots.push(new BranchNode('Local', 'section', '', toTree(localBranches, currentBranch, 'local')));
 
   if (includeRemoteBranches) {
     const remoteBranches = listBranches(repoRoot, true)
@@ -321,6 +350,20 @@ function git(args, cwd) {
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe']
   });
+}
+
+function getCurrentBranch(repoRoot) {
+  const branchName = git(['branch', '--show-current'], repoRoot).trim();
+  if (branchName) {
+    return branchName;
+  }
+
+  try {
+    const shortSha = git(['rev-parse', '--short', 'HEAD'], repoRoot).trim();
+    return shortSha ? `HEAD detached at ${shortSha}` : '';
+  } catch (_) {
+    return '';
+  }
 }
 
 function validateBranchName(value, repoRoot) {

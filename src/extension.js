@@ -6,11 +6,12 @@ const SCM_VIEW_ID = 'hierarchicalGitBranches.scmView';
 const ACTIVITY_VIEW_ID = 'hierarchicalGitBranches.activityView';
 
 class BranchNode {
-  constructor(label, type, fullName = '', children = []) {
+  constructor(label, type, fullName = '', children = [], source = '') {
     this.label = label;
     this.type = type;
     this.fullName = fullName;
     this.children = children;
+    this.source = source;
   }
 }
 
@@ -109,16 +110,15 @@ function activate(context) {
       }
 
       const branchName = node.fullName;
-      const isOriginBranch = branchName.startsWith('origin/');
-      const target = isOriginBranch ? branchName.slice('origin/'.length) : branchName;
-      const args = isOriginBranch
+      const target = branchName.startsWith('origin/') ? branchName.slice('origin/'.length) : branchName;
+      const args = branchName.startsWith('origin/')
         ? ['switch', '--track', '-c', target, branchName]
         : ['switch', branchName];
 
       try {
         await runGitTask(provider.repoRoot, args, `Checking out ${target}`);
       } catch (error) {
-        if (isOriginBranch) {
+        if (branchName.startsWith('origin/')) {
           await runGitTask(provider.repoRoot, ['switch', target], `Checking out ${target}`);
         } else {
           throw error;
@@ -130,17 +130,15 @@ function activate(context) {
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand('hierarchicalGitBranches.createBranchFromCurrent', async () => {
-      if (!provider.repoRoot) {
-        vscode.window.showWarningMessage('No Git repository found.');
+    vscode.commands.registerCommand('hierarchicalGitBranches.createBranchFromSelected', async (node) => {
+      if (!provider.repoRoot || !node?.fullName) {
         return;
       }
 
-      provider.refresh();
-      const current = provider.currentBranch || 'HEAD';
+      const baseBranch = node.fullName;
       const branchName = await vscode.window.showInputBox({
-        title: 'Create Branch From Current',
-        prompt: `Current base: ${current}`,
+        title: 'Create Branch From Selected',
+        prompt: `Base branch: ${baseBranch}`,
         placeHolder: 'feature/new-branch',
         validateInput: (value) => validateBranchName(value, provider.repoRoot)
       });
@@ -150,7 +148,52 @@ function activate(context) {
       }
 
       const trimmed = branchName.trim();
-      await runGitTask(provider.repoRoot, ['switch', '-c', trimmed], `Creating ${trimmed} from ${current}`);
+      await runGitTask(provider.repoRoot, ['switch', '-c', trimmed, baseBranch], `Creating ${trimmed} from ${baseBranch}`);
+      provider.refresh();
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('hierarchicalGitBranches.deleteBranchEverywhere', async (node) => {
+      if (!provider.repoRoot || !node?.fullName) {
+        return;
+      }
+
+      provider.refresh();
+      const targets = getDeleteTargets(provider.repoRoot, node);
+
+      if (targets.localBranch && targets.localBranch === provider.currentBranch) {
+        vscode.window.showWarningMessage(`Cannot delete current branch: ${targets.localBranch}. Switch to another branch first.`);
+        return;
+      }
+
+      if (!targets.localExists && !targets.remoteExists) {
+        vscode.window.showWarningMessage(`No local or remote branch found for ${node.fullName}.`);
+        return;
+      }
+
+      const parts = [];
+      if (targets.localExists) parts.push(`local: ${targets.localBranch}`);
+      if (targets.remoteExists) parts.push(`remote: ${targets.remoteName}/${targets.remoteBranch}`);
+
+      const confirmed = await vscode.window.showWarningMessage(
+        `Delete branch ${node.fullName}? This will delete ${parts.join(' and ')}.`,
+        { modal: true },
+        'Delete'
+      );
+
+      if (confirmed !== 'Delete') {
+        return;
+      }
+
+      if (targets.localExists) {
+        await runGitTask(provider.repoRoot, ['branch', '-d', targets.localBranch], `Deleting local ${targets.localBranch}`);
+      }
+
+      if (targets.remoteExists) {
+        await runGitTask(provider.repoRoot, ['push', targets.remoteName, '--delete', targets.remoteBranch], `Deleting remote ${targets.remoteName}/${targets.remoteBranch}`);
+      }
+
       provider.refresh();
     })
   );
@@ -180,13 +223,13 @@ function buildTree(repoRoot, currentBranch) {
     .get('includeRemoteBranches', true);
 
   const localBranches = listBranches(repoRoot, false);
-  const roots = [new BranchNode('Local', 'section', '', toTree(localBranches, currentBranch))];
+  const roots = [new BranchNode('Local', 'section', '', toTree(localBranches, currentBranch, 'local'))];
 
   if (includeRemoteBranches) {
     const remoteBranches = listBranches(repoRoot, true)
       .filter((branch) => !branch.endsWith('/HEAD'))
       .map((branch) => branch.replace(/^remotes\//, ''));
-    roots.push(new BranchNode('Remotes', 'section', '', toTree(remoteBranches, currentBranch)));
+    roots.push(new BranchNode('Remotes', 'section', '', toTree(remoteBranches, currentBranch, 'remote')));
   }
 
   return roots;
@@ -200,7 +243,7 @@ function listBranches(repoRoot, remote) {
   return output.split(/\r?\n/).map((line) => line.trim()).filter(Boolean).sort();
 }
 
-function toTree(branches, currentBranch) {
+function toTree(branches, currentBranch, source) {
   const root = new Map();
 
   for (const branch of branches) {
@@ -216,7 +259,8 @@ function toTree(branches, currentBranch) {
           label: part,
           type: isLeaf ? 'branch' : 'group',
           fullName: isLeaf ? branch : '',
-          children: new Map()
+          children: new Map(),
+          source: isLeaf ? source : ''
         });
       }
 
@@ -224,6 +268,7 @@ function toTree(branches, currentBranch) {
       if (isLeaf) {
         entry.type = 'branch';
         entry.fullName = branch;
+        entry.source = source;
       }
       cursor = entry.children;
     }
@@ -238,7 +283,7 @@ function mapEntry(entry, currentBranch) {
   const children = Array.from(entry.children.values())
     .sort((left, right) => sortNodes(left, right, currentBranch))
     .map((child) => mapEntry(child, currentBranch));
-  return new BranchNode(entry.label, entry.type, entry.fullName, children);
+  return new BranchNode(entry.label, entry.type, entry.fullName, children, entry.source);
 }
 
 function sortNodes(left, right, currentBranch) {
@@ -296,6 +341,64 @@ function validateBranchName(value, repoRoot) {
     return 'A local branch with this name already exists.';
   } catch (_) {
     return undefined;
+  }
+}
+
+function getDeleteTargets(repoRoot, node) {
+  if (node.source === 'remote') {
+    const remote = parseRemoteBranch(node.fullName);
+    const localBranch = remote ? remote.branch : node.fullName;
+    return {
+      localBranch,
+      localExists: refExists(repoRoot, `refs/heads/${localBranch}`),
+      remoteName: remote?.remote || 'origin',
+      remoteBranch: remote?.branch || node.fullName,
+      remoteExists: remote ? refExists(repoRoot, `refs/remotes/${remote.remote}/${remote.branch}`) : false
+    };
+  }
+
+  const upstream = getUpstreamBranch(repoRoot, node.fullName) || getOriginBranch(repoRoot, node.fullName);
+  return {
+    localBranch: node.fullName,
+    localExists: refExists(repoRoot, `refs/heads/${node.fullName}`),
+    remoteName: upstream?.remote || 'origin',
+    remoteBranch: upstream?.branch || node.fullName,
+    remoteExists: upstream ? refExists(repoRoot, `refs/remotes/${upstream.remote}/${upstream.branch}`) : false
+  };
+}
+
+function getUpstreamBranch(repoRoot, branchName) {
+  try {
+    return parseRemoteBranch(git(['rev-parse', '--abbrev-ref', `${branchName}@{upstream}`], repoRoot).trim());
+  } catch (_) {
+    return undefined;
+  }
+}
+
+function getOriginBranch(repoRoot, branchName) {
+  return refExists(repoRoot, `refs/remotes/origin/${branchName}`)
+    ? { remote: 'origin', branch: branchName }
+    : undefined;
+}
+
+function parseRemoteBranch(branchName) {
+  const index = branchName.indexOf('/');
+  if (index <= 0 || index === branchName.length - 1) {
+    return undefined;
+  }
+
+  return {
+    remote: branchName.slice(0, index),
+    branch: branchName.slice(index + 1)
+  };
+}
+
+function refExists(repoRoot, refName) {
+  try {
+    git(['show-ref', '--verify', '--quiet', refName], repoRoot);
+    return true;
+  } catch (_) {
+    return false;
   }
 }
 

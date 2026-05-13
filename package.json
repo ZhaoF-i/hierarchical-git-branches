@@ -2,7 +2,7 @@
   "name": "hierarchical-git-branches",
   "displayName": "Hierarchical Git Branches",
   "description": "Show Git branches as a slash-separated tree in the VS Code Source Control sidebar.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "local",
   "license": "MIT",
   "repository": {
@@ -31,7 +31,8 @@
     "onView:hierarchicalGitBranches.activityView",
     "onCommand:hierarchicalGitBranches.refresh",
     "onCommand:hierarchicalGitBranches.checkout",
-    "onCommand:hierarchicalGitBranches.createBranchFromCurrent",
+    "onCommand:hierarchicalGitBranches.createBranchFromSelected",
+    "onCommand:hierarchicalGitBranches.deleteBranchEverywhere",
     "onCommand:hierarchicalGitBranches.fetch",
     "onCommand:hierarchicalGitBranches.copyBranchName"
   ],
@@ -71,8 +72,12 @@
         "title": "Branch Tree: Checkout"
       },
       {
-        "command": "hierarchicalGitBranches.createBranchFromCurrent",
-        "title": "Branch Tree: Create Branch From Current"
+        "command": "hierarchicalGitBranches.createBranchFromSelected",
+        "title": "Branch Tree: Create Branch From Selected"
+      },
+      {
+        "command": "hierarchicalGitBranches.deleteBranchEverywhere",
+        "title": "Branch Tree: Delete Local and Remote Branch"
       },
       {
         "command": "hierarchicalGitBranches.fetch",
@@ -104,14 +109,19 @@
           "group": "inline@1"
         },
         {
-          "command": "hierarchicalGitBranches.createBranchFromCurrent",
+          "command": "hierarchicalGitBranches.createBranchFromSelected",
           "when": "(view == hierarchicalGitBranches.scmView || view == hierarchicalGitBranches.activityView) && viewItem == branch",
           "group": "navigation@1"
         },
         {
-          "command": "hierarchicalGitBranches.copyBranchName",
+          "command": "hierarchicalGitBranches.deleteBranchEverywhere",
           "when": "(view == hierarchicalGitBranches.scmView || view == hierarchicalGitBranches.activityView) && viewItem == branch",
           "group": "navigation@2"
+        },
+        {
+          "command": "hierarchicalGitBranches.copyBranchName",
+          "when": "(view == hierarchicalGitBranches.scmView || view == hierarchicalGitBranches.activityView) && viewItem == branch",
+          "group": "navigation@3"
         }
       ]
     },

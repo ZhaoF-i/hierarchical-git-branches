@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.0.4
+
+- Create a new branch from the right-clicked branch instead of the current branch.
+- Add a guarded delete action that removes matching local and remote branches.
+
 ## 0.0.2
 
 - Create a new branch from the right-clicked branch instead of the current branch.

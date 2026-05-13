@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.0
+
+- Add branch filtering.
+- Auto-reveal the current branch in the tree.
+- Show local tracking state, ahead/behind counts, and last commit time.
+- Add checkout command copying, current branch push, selected branch update, branch rename, and branch pinning.
+- Require typed confirmation when deleting a remote branch.
+
 ## 0.0.5
 
 - Show the current branch as a fixed top item in the branch tree.

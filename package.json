@@ -2,7 +2,7 @@
   "name": "hierarchical-git-branches",
   "displayName": "Hierarchical Git Branches",
   "description": "Show Git branches as a slash-separated tree in the VS Code Source Control sidebar.",
-  "version": "0.0.5",
+  "version": "1.0.0",
   "publisher": "local",
   "license": "MIT",
   "repository": {
@@ -30,9 +30,16 @@
     "onView:hierarchicalGitBranches.scmView",
     "onView:hierarchicalGitBranches.activityView",
     "onCommand:hierarchicalGitBranches.refresh",
+    "onCommand:hierarchicalGitBranches.filterBranches",
+    "onCommand:hierarchicalGitBranches.clearFilter",
     "onCommand:hierarchicalGitBranches.checkout",
     "onCommand:hierarchicalGitBranches.createBranchFromSelected",
     "onCommand:hierarchicalGitBranches.deleteBranchEverywhere",
+    "onCommand:hierarchicalGitBranches.copyCheckoutCommand",
+    "onCommand:hierarchicalGitBranches.toggleFavorite",
+    "onCommand:hierarchicalGitBranches.pushCurrentBranch",
+    "onCommand:hierarchicalGitBranches.updateSelectedBranch",
+    "onCommand:hierarchicalGitBranches.renameBranch",
     "onCommand:hierarchicalGitBranches.fetch",
     "onCommand:hierarchicalGitBranches.copyBranchName"
   ],
@@ -68,6 +75,16 @@
         "icon": "$(refresh)"
       },
       {
+        "command": "hierarchicalGitBranches.filterBranches",
+        "title": "Branch Tree: Filter Branches",
+        "icon": "$(filter)"
+      },
+      {
+        "command": "hierarchicalGitBranches.clearFilter",
+        "title": "Branch Tree: Clear Filter",
+        "icon": "$(clear-all)"
+      },
+      {
         "command": "hierarchicalGitBranches.checkout",
         "title": "Branch Tree: Checkout"
       },
@@ -78,6 +95,27 @@
       {
         "command": "hierarchicalGitBranches.deleteBranchEverywhere",
         "title": "Branch Tree: Delete Local and Remote Branch"
+      },
+      {
+        "command": "hierarchicalGitBranches.copyCheckoutCommand",
+        "title": "Branch Tree: Copy Checkout Command"
+      },
+      {
+        "command": "hierarchicalGitBranches.toggleFavorite",
+        "title": "Branch Tree: Toggle Pin"
+      },
+      {
+        "command": "hierarchicalGitBranches.pushCurrentBranch",
+        "title": "Branch Tree: Push Current Branch",
+        "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "hierarchicalGitBranches.updateSelectedBranch",
+        "title": "Branch Tree: Pull or Fetch Selected Branch"
+      },
+      {
+        "command": "hierarchicalGitBranches.renameBranch",
+        "title": "Branch Tree: Rename Branch"
       },
       {
         "command": "hierarchicalGitBranches.fetch",
@@ -92,14 +130,29 @@
     "menus": {
       "view/title": [
         {
-          "command": "hierarchicalGitBranches.fetch",
+          "command": "hierarchicalGitBranches.pushCurrentBranch",
           "when": "view == hierarchicalGitBranches.scmView || view == hierarchicalGitBranches.activityView",
           "group": "navigation@1"
         },
         {
-          "command": "hierarchicalGitBranches.refresh",
+          "command": "hierarchicalGitBranches.fetch",
           "when": "view == hierarchicalGitBranches.scmView || view == hierarchicalGitBranches.activityView",
           "group": "navigation@2"
+        },
+        {
+          "command": "hierarchicalGitBranches.filterBranches",
+          "when": "view == hierarchicalGitBranches.scmView || view == hierarchicalGitBranches.activityView",
+          "group": "navigation@3"
+        },
+        {
+          "command": "hierarchicalGitBranches.clearFilter",
+          "when": "view == hierarchicalGitBranches.scmView || view == hierarchicalGitBranches.activityView",
+          "group": "navigation@4"
+        },
+        {
+          "command": "hierarchicalGitBranches.refresh",
+          "when": "view == hierarchicalGitBranches.scmView || view == hierarchicalGitBranches.activityView",
+          "group": "navigation@5"
         }
       ],
       "view/item/context": [
@@ -114,14 +167,34 @@
           "group": "navigation@1"
         },
         {
-          "command": "hierarchicalGitBranches.deleteBranchEverywhere",
+          "command": "hierarchicalGitBranches.updateSelectedBranch",
           "when": "(view == hierarchicalGitBranches.scmView || view == hierarchicalGitBranches.activityView) && viewItem == branch",
           "group": "navigation@2"
         },
         {
-          "command": "hierarchicalGitBranches.copyBranchName",
+          "command": "hierarchicalGitBranches.renameBranch",
           "when": "(view == hierarchicalGitBranches.scmView || view == hierarchicalGitBranches.activityView) && viewItem == branch",
           "group": "navigation@3"
+        },
+        {
+          "command": "hierarchicalGitBranches.toggleFavorite",
+          "when": "(view == hierarchicalGitBranches.scmView || view == hierarchicalGitBranches.activityView) && viewItem == branch",
+          "group": "navigation@4"
+        },
+        {
+          "command": "hierarchicalGitBranches.deleteBranchEverywhere",
+          "when": "(view == hierarchicalGitBranches.scmView || view == hierarchicalGitBranches.activityView) && viewItem == branch",
+          "group": "navigation@5"
+        },
+        {
+          "command": "hierarchicalGitBranches.copyBranchName",
+          "when": "(view == hierarchicalGitBranches.scmView || view == hierarchicalGitBranches.activityView) && viewItem == branch",
+          "group": "navigation@6"
+        },
+        {
+          "command": "hierarchicalGitBranches.copyCheckoutCommand",
+          "when": "(view == hierarchicalGitBranches.scmView || view == hierarchicalGitBranches.activityView) && viewItem == branch",
+          "group": "navigation@7"
         }
       ]
     },

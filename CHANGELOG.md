@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.1
+
+- When creating a branch from a selected branch, fetch the selected upstream or remote branch first.
+- Automatically push the new branch and set its upstream.
+
 ## 1.0.0
 
 - Add branch filtering.

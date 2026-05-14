@@ -244,7 +244,10 @@ function activate(context) {
     }
 
     const trimmed = branchName.trim();
-    await runGitTask(provider.repoRoot, ['switch', '-c', trimmed, baseBranch], `Creating ${trimmed} from ${baseBranch}`);
+    const base = await prepareCreateBranchBase(provider.repoRoot, node);
+    await runGitTask(provider.repoRoot, ['switch', '-c', trimmed, base.ref], `Creating ${trimmed} from ${base.ref}`);
+    await runGitTask(provider.repoRoot, ['push', '-u', base.remoteName, trimmed], `Pushing ${trimmed} to ${base.remoteName}`);
+    await runGitTask(provider.repoRoot, ['fetch', base.remoteName, trimmed], `Refreshing ${base.remoteName}/${trimmed}`);
     provider.refresh();
   }));
 
@@ -715,6 +718,35 @@ function getDeleteTargets(repoRoot, node) {
     remoteName: upstream?.remote || 'origin',
     remoteBranch: upstream?.branch || node.fullName,
     remoteExists: upstream ? refExists(repoRoot, `refs/remotes/${upstream.remote}/${upstream.branch}`) : false
+  };
+}
+
+async function prepareCreateBranchBase(repoRoot, node) {
+  if (node.source === 'remote') {
+    const remote = parseRemoteBranch(node.fullName);
+    if (!remote) {
+      return { ref: node.fullName, remoteName: 'origin' };
+    }
+
+    await runGitTask(repoRoot, ['fetch', remote.remote, remote.branch], `Fetching latest ${node.fullName}`);
+    return {
+      ref: `${remote.remote}/${remote.branch}`,
+      remoteName: remote.remote
+    };
+  }
+
+  const upstream = getUpstreamBranch(repoRoot, node.fullName);
+  if (upstream) {
+    await runGitTask(repoRoot, ['fetch', upstream.remote, upstream.branch], `Fetching latest ${upstream.remote}/${upstream.branch}`);
+    return {
+      ref: `${upstream.remote}/${upstream.branch}`,
+      remoteName: upstream.remote
+    };
+  }
+
+  return {
+    ref: node.fullName,
+    remoteName: 'origin'
   };
 }
 

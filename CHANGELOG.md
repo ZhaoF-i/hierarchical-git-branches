@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.2
+
+- Hide branch last commit time by default.
+- Add `hierarchicalGitBranches.showLastCommitTime` to opt back in.
+
 ## 1.0.1
 
 - When creating a branch from a selected branch, fetch the selected upstream or remote branch first.

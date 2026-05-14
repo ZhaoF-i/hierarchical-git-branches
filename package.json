@@ -2,7 +2,7 @@
   "name": "hierarchical-git-branches",
   "displayName": "Hierarchical Git Branches",
   "description": "Show Git branches as a slash-separated tree in the VS Code Source Control sidebar.",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "publisher": "local",
   "license": "MIT",
   "repository": {
@@ -210,6 +210,11 @@
           "type": "boolean",
           "default": true,
           "description": "Refresh the branch tree when the active editor or workspace changes."
+        },
+        "hierarchicalGitBranches.showLastCommitTime": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show the last commit time next to each branch."
         }
       }
     }

@@ -585,6 +585,9 @@ function sectionIcon(label) {
 }
 
 function branchDescription(node, currentBranch, favorites) {
+  const showLastCommitTime = vscode.workspace
+    .getConfiguration('hierarchicalGitBranches')
+    .get('showLastCommitTime', false);
   const parts = [];
   if (node.fullName === currentBranch) {
     parts.push('current');
@@ -601,7 +604,7 @@ function branchDescription(node, currentBranch, favorites) {
       parts.push('local only');
     }
   }
-  if (node.meta?.lastCommit) {
+  if (showLastCommitTime && node.meta?.lastCommit) {
     parts.push(node.meta.lastCommit);
   }
   return parts.join(' | ');
